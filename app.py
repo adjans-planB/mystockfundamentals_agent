@@ -457,6 +457,32 @@ def save_to_stock_insights(
 
 # ── Flask routes ──────────────────────────────────────────────────────────────
 
+
+@app.route("/debug", methods=["POST"])
+def debug():
+    """Echo back what we receive — helps diagnose n8n body format issues."""
+    raw = request.get_data(as_text=True)
+    content_type = request.content_type
+    try:
+        parsed = request.get_json(force=True)
+        parse_ok = True
+        parse_type = type(parsed).__name__
+    except Exception as e:
+        parsed = None
+        parse_ok = False
+        parse_type = str(e)
+    return jsonify({
+        "content_type": content_type,
+        "raw_length": len(raw),
+        "raw_preview": raw[:500],
+        "parse_ok": parse_ok,
+        "parse_type": parse_type,
+        "parsed_keys": list(parsed.keys()) if isinstance(parsed, dict) else (
+            f"array of {len(parsed)}" if isinstance(parsed, list) else None
+        ),
+    })
+
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "time": datetime.now(SYDNEY).isoformat()})
