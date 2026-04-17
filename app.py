@@ -468,6 +468,9 @@ def analyse():
         payload = request.get_json(force=True)
         if not payload:
             return jsonify({"error": "Empty payload"}), 400
+        # n8n HTTP Request node wraps output in an array — unwrap if needed
+        if isinstance(payload, list):
+            payload = payload[0]
 
         log.info(
             f"POST /analyse — "
