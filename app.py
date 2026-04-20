@@ -494,6 +494,10 @@ def analyse():
         payload = request.get_json(force=True)
         if not payload:
             return jsonify({"error": "Empty payload"}), 400
+        # n8n may send a JSON string (double-encoded) — parse it
+        if isinstance(payload, str):
+            import json as _json
+            payload = _json.loads(payload)
         # n8n HTTP Request node wraps output in an array — unwrap if needed
         if isinstance(payload, list):
             payload = payload[0]
