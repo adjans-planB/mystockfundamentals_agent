@@ -491,14 +491,19 @@ def health():
 @app.route("/analyse", methods=["POST"])
 def analyse():
     try:
-        payload = request.get_json(force=True)
-        if not payload:
-            return jsonify({"error": "Empty payload"}), 400
-        # n8n may send a JSON string (double-encoded) — parse it
+        import json as _json
+        # Read raw body and parse manually — handles all n8n encoding variants
+        raw = request.get_data(as_text=True)
+        if not raw or not raw.strip():
+            return jsonify({"error": "Empty body"}), 400
+        try:
+            payload = _json.loads(raw)
+        except Exception as e:
+            return jsonify({"error": f"JSON parse failed: {e}", "raw_preview": raw[:200]}), 400
+        # Unwrap double-encoded string
         if isinstance(payload, str):
-            import json as _json
             payload = _json.loads(payload)
-        # n8n HTTP Request node wraps output in an array — unwrap if needed
+        # Unwrap array wrapper
         if isinstance(payload, list):
             payload = payload[0]
 
