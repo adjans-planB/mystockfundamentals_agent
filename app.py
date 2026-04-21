@@ -529,7 +529,11 @@ def save_to_stock_insights(
             "source_links":    urls,
         })
 
+    log.info(f"stock_insights: {len(rows)} rows to write, stocks={stocks_covered[:5]}")
+    log.info(f"stock_insights: SUPABASE_URL={'set' if SUPABASE_URL else 'MISSING'}, KEY={'set' if SUPABASE_KEY else 'MISSING'}")
+
     if not rows:
+        log.warning("stock_insights: rows is empty — skipping")
         return
 
     try:
@@ -539,10 +543,21 @@ def save_to_stock_insights(
             json=rows,
             timeout=15,
         )
+        log.info(f"stock_insights response: {resp.status_code} — {resp.text[:300]}")
         if resp.status_code in (200, 201):
             log.info(f"stock_insights: wrote {len(rows)} rows for {today}")
+        elif resp.status_code == 409:
+            # Conflict on unique key — try plain insert without upsert header
+            headers_plain = {k: v for k, v in headers.items() if k != "Prefer"}
+            resp2 = requests.post(
+                f"{SUPABASE_URL}/rest/v1/stock_insights",
+                headers=headers_plain,
+                json=rows,
+                timeout=15,
+            )
+            log.info(f"stock_insights plain insert: {resp2.status_code} — {resp2.text[:200]}")
         else:
-            log.warning(f"stock_insights write failed: {resp.status_code} {resp.text[:200]}")
+            log.warning(f"stock_insights write failed: {resp.status_code} {resp.text[:500]}")
     except Exception as e:
         log.error(f"stock_insights write error: {e}")
 
