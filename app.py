@@ -206,14 +206,36 @@ Today is {today} (Sydney time).
 
 The trader runs TWO portfolios:
 
-1. ROC PORTFOLIO (Primary Strategy)
-   Nick Radge / TheChartist momentum system. Stocks ranked by 200-day Rate of Change,
+1. ROC PORTFOLIO (Primary Strategy — read carefully)
+   Nick Radge / TheChartist momentum system. Stocks ranked by 200-day Rate of Change (ROC),
    ATR-based position sizing, monthly rebalance on the last trading day of each month.
-   Each position shows: ticker, shares, entry_price, entry_value, roc_pct (rank score), weight_pct.
-   KEY FLAG: Identify any ⚠️ news that could cause a stock to lose momentum or drop out of
-   the top 40 ROC ranking — profit warnings, structural decline, earnings misses, sector rotation.
 
-2. IG CFD POSITIONS (Secondary)
+   Each held position includes: ticker, rank (by portfolio weight), entry_price, current_price,
+   pnl_pct (live P&L %), entry_value, roc_pct (200d ROC score), weight_pct.
+
+   ROC POSITION RULES:
+   - For positions WITH material news: write 2-4 sentences covering the news and its impact
+   - For positions with NO material news: write exactly ONE line:
+     "Momentum intact — [sector] exposure. Rank #{rank} in portfolio."
+     DO NOT write "No material news found" — it adds no value.
+   - Flag ⚠️ ONLY for: profit warnings, earnings misses, guidance cuts, structural decline,
+     or rank drop of 3+ positions vs yesterday
+
+   SECTOR CONCENTRATION: After listing all positions, add a short paragraph noting any sector
+   representing >25% combined weight. Flag correlated drawdown risk if multiple sectors
+   are moving together (e.g. gold + lithium = commodity cycle correlation).
+
+2. ROC TOP 40 UNIVERSE (Opportunity Analysis)
+   The full top 40 ranked stocks are provided with today's rank, yesterday's rank, and
+   whether each stock is currently held.
+
+   ROC MOVERS ANALYSIS — identify and comment on:
+   - Held positions that have RISEN 3+ ranks (momentum accelerating — positive)
+   - Held positions that have FALLEN 3+ ranks (momentum fading — monitor closely)
+   - Stocks NEW to the top 40 today that are NOT held (potential buy candidates at rebalance)
+   - Held positions ranked below #30 (at risk of dropping out at next rebalance on 30 April)
+
+3. IG CFD POSITIONS (Secondary)
    Shorter-term CFD positions. Each shows: symbol, quantity, opening_price, current_price,
    rs_data (relative strength vs XJO), has_price_sensitive (ASX price-sensitive announcement flag).
    Flag upcoming earnings/dividend dates from the calendar section.
@@ -224,27 +246,40 @@ REPORT FORMAT — produce clean HTML:
 
 <h2>🌅 Morning Briefing — {today}</h2>
 
-<h3>📈 ROC Portfolio</h3>
-For each position: ticker | entry $ | weight% then 2-4 sentence news summary.
-Flag ⚠️ for anything threatening the momentum thesis.
+<h3>📈 ROC Portfolio ({today})</h3>
+For each position show: <b>TICKER</b> | Rank #N | Entry $X → Current $Y | P&L: +/-Z% | Weight: W%
+Then one line (no news) or 2-4 sentences (material news). Flag ⚠️ thesis risks.
+
+After all positions, add:
+<h4>🏭 Sector Concentration</h4>
+One paragraph on portfolio sector exposure and correlation risk.
+
+<h3>📊 ROC Top 40 Movers</h3>
+- Rank climbers among held positions (momentum accelerating)
+- Rank fallers among held positions (watch closely)
+- New top-40 entrants not currently held (rebalance candidates)
+- Positions at risk of dropping out (rank > 30)
 
 <h3>💼 IG CFD Positions</h3>
-For each: ticker | current price | RS trend | upcoming calendar events.
-Then news summary. Bold any price-sensitive ASX announcements.
+For each: <b>TICKER</b> | Current $X | P&L: +/-Y% | RS: [trend]
+Then news summary. <b>Bold price-sensitive ASX announcements.</b>
 
 <h3>🌍 Market & Macro</h3>
-Use the market_context data (indices, breadth, ASX200 top RS) for 2-3 sentences of context.
+Use market_context (indices, breadth, ASX200 top RS) for 2-3 sentences.
+Note any macro themes affecting both books (rates, commodities, USD/AUD).
 
 <h3>⚡ Key Actions Today</h3>
-3-5 bullet points — concrete things to act on or watch closely.
+3-5 concrete bullet points — things to act on or monitor today specifically.
+Include rebalance countdown if within 10 trading days.
 
-Be direct and concise. One line is enough for stocks with no material news.
-Do not pad or invent commentary."""
+Be direct and professional. No padding. Numbers over adjectives."""
 
 
 def build_user_prompt(payload: dict) -> str:
     ig                   = payload.get("ig_positions", [])
     roc                  = payload.get("roc_positions", [])
+    roc_top40            = payload.get("roc_top40", [])
+    roc_movers           = payload.get("roc_movers", {})
     cal                  = payload.get("calendar", {})
     mkt                  = payload.get("market_context", {})
     headlines_pre_loaded = payload.get("headlines_pre_loaded", False)
@@ -263,14 +298,35 @@ def build_user_prompt(payload: dict) -> str:
         else "Call search_news then fetch_article for each ticker."
     )
 
+    # Build rebalance countdown
+    from datetime import date
+    import calendar as cal_mod
+    today_d = date.today()
+    # Last trading day of current month (approximate — last weekday)
+    last_day = date(today_d.year, today_d.month,
+                    cal_mod.monthrange(today_d.year, today_d.month)[1])
+    while last_day.weekday() > 4:
+        last_day = date(last_day.year, last_day.month, last_day.day - 1)
+    trading_days_left = sum(
+        1 for d in range((last_day - today_d).days + 1)
+        if date.fromordinal(today_d.toordinal() + d).weekday() < 5
+    )
+
     return f"""Research all stocks and produce the morning briefing.
 
 NOTE: {research_note}
 
-=== ROC PORTFOLIO (Primary — {len(roc)} positions) ===
+=== ROC PORTFOLIO — {len(roc)} HELD POSITIONS ===
+(includes rank, current_price, pnl_pct vs entry — use these in the report)
 {json.dumps(roc, indent=2) if roc else "No active ROC positions."}
 
-=== IG CFD POSITIONS ({len(ig)} positions, headlines pre-loaded) ===
+=== ROC TOP 40 UNIVERSE (full ranked list with rank changes) ===
+{json.dumps(roc_top40, indent=2) if roc_top40 else "Top 40 data not available."}
+
+=== ROC MOVERS TODAY ===
+{json.dumps(roc_movers, indent=2) if roc_movers else "No mover data available."}
+
+=== IG CFD POSITIONS — {len(ig)} positions (headlines pre-loaded) ===
 {json.dumps(ig, indent=2) if ig else "No active IG CFD positions."}
 
 === EARNINGS & DIVIDENDS CALENDAR ===
@@ -279,7 +335,10 @@ NOTE: {research_note}
 === MARKET CONTEXT ===
 {json.dumps(mkt, indent=2) if mkt else "No market context provided."}
 
-=== ALL TICKERS ({len(all_tickers)} total) ===
+=== REBALANCE COUNTDOWN ===
+Next ROC rebalance: {last_day.strftime("%d %B %Y")} ({trading_days_left} trading days away)
+
+=== ALL TICKERS TO RESEARCH ({len(all_tickers)} total) ===
 {', '.join(all_tickers)}
 
 After all research, write the full HTML briefing."""
