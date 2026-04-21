@@ -229,11 +229,15 @@ The trader runs TWO portfolios:
    The full top 40 ranked stocks are provided with today's rank, yesterday's rank, and
    whether each stock is currently held.
 
-   ROC MOVERS ANALYSIS — identify and comment on:
-   - Held positions that have RISEN 3+ ranks (momentum accelerating — positive)
-   - Held positions that have FALLEN 3+ ranks (momentum fading — monitor closely)
-   - Stocks NEW to the top 40 today that are NOT held (potential buy candidates at rebalance)
-   - Held positions ranked below #30 (at risk of dropping out at next rebalance on 30 April)
+   ROC MOVERS ANALYSIS — the payload includes roc_movers with these fields:
+   - held_rank_changes: ALL held positions with rank data sorted by magnitude of change.
+     Show every held position's rank movement, e.g. "LTR #4→#2 (▲2)" or "NHC #6→#9 (▼3)".
+     ⚠️ Flag any held position falling 3+ ranks as momentum concern.
+   - new_entries: Stocks NEW to top 40 today not currently held — potential rebalance buys.
+     For each, note sector and whether it complements or duplicates existing exposure.
+   - exits: Stocks that FELL OUT of top 40 today. If 3 stocks entered, 3 exited — name them.
+     If any held position is in exits (held_exits), this is CRITICAL — flag immediately.
+   - at_risk: Held positions ranked 31-40 — one bad day could push them out before rebalance.
 
 3. IG CFD POSITIONS (Secondary)
    Shorter-term CFD positions. Each shows: symbol, quantity, opening_price, current_price,
@@ -259,24 +263,31 @@ After all positions, add:
 One paragraph on portfolio sector exposure and correlation risk.
 
 <h3>📊 ROC Top 40 Movers</h3>
-Use this structure with clear subsections:
-<p><b>📈 Rank Climbers (Held):</b></p>
+Use this exact structure:
+
+<p><b>📊 Held Position Rank Changes:</b></p>
 <ul style="margin: 4px 0 12px 0;">
-  <li>TICKER — moved from #X to #Y — brief note</li>
+  <li>TICKER — #X → #Y (▲N or ▼N) — one line note if significant, otherwise omit note</li>
 </ul>
-<p><b>📉 Rank Fallers (Held):</b></p>
+List ALL held positions that have rank data. Sort by magnitude of change (biggest movers first).
+Flag ⚠️ on any falling 3+ ranks.
+
+<p><b>🆕 New Entrants (Not Held — Rebalance Candidates):</b></p>
 <ul style="margin: 4px 0 12px 0;">
-  <li>TICKER — moved from #X to #Y — brief note</li>
+  <li>TICKER — Rank #N @ $X — sector, and whether it duplicates existing exposure</li>
 </ul>
-<p><b>🆕 New Top-40 Entrants (Not Held):</b></p>
+
+<p><b>👋 Exits from Top 40:</b></p>
 <ul style="margin: 4px 0 12px 0;">
-  <li>TICKER — Rank #N @ $X — brief sector note</li>
+  <li>TICKER — was Rank #N — dropped out today</li>
 </ul>
-<p><b>⚠️ At Risk of Dropping Out (Rank &gt; 30):</b></p>
+If a held position appears here, flag ⚠️ CRITICAL — position dropped out of universe.
+
+<p><b>⚠️ At Risk (Held, Rank 31-40):</b></p>
 <ul style="margin: 4px 0 12px 0;">
-  <li>TICKER — Rank #N — note</li>
+  <li>TICKER — Rank #N — at risk before 30 April rebalance</li>
 </ul>
-If any category has no entries, write "None today" as a single list item.
+If no entries in any category, write "None today."
 
 <h3>💼 IG CFD Positions</h3>
 For each position use this exact structure:
