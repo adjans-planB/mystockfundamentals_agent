@@ -330,7 +330,7 @@ NOTE: {research_note}
 {json.dumps(ig, indent=2) if ig else "No active IG CFD positions."}
 
 === EARNINGS & DIVIDENDS CALENDAR ===
-{json.dumps(cal, indent=2) if cal else "No calendar data provided."}
+{cal.get('calendar_text') or json.dumps(cal, indent=2) if cal else "No calendar data provided."}
 
 === MARKET CONTEXT ===
 {json.dumps(mkt, indent=2) if mkt else "No market context provided."}
