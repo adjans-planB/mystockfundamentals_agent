@@ -247,22 +247,44 @@ REPORT FORMAT — produce clean HTML:
 <h2>🌅 Morning Briefing — {today}</h2>
 
 <h3>📈 ROC Portfolio ({today})</h3>
-For each position show: <b>TICKER</b> | Rank #N | Entry $X → Current $Y | P&L: +/-Z% | Weight: W%
-Then one line (no news) or 2-4 sentences (material news). Flag ⚠️ thesis risks.
+For each position use this exact structure — each stock MUST be wrapped in its own div:
+
+<div style="margin-bottom: 12px; padding: 8px 0; border-bottom: 1px solid #eee;">
+<p style="margin: 0 0 4px 0;"><b>TICKER</b> | Rank #N | Entry $X → Current $Y | P&L: +/-Z% | Weight: W%</p>
+<p style="margin: 0; color: #444;">One line or 2-4 sentence news summary here. Flag ⚠️ thesis risks.</p>
+</div>
 
 After all positions, add:
 <h4>🏭 Sector Concentration</h4>
 One paragraph on portfolio sector exposure and correlation risk.
 
 <h3>📊 ROC Top 40 Movers</h3>
-- Rank climbers among held positions (momentum accelerating)
-- Rank fallers among held positions (watch closely)
-- New top-40 entrants not currently held (rebalance candidates)
-- Positions at risk of dropping out (rank > 30)
+Use this structure with clear subsections:
+<p><b>📈 Rank Climbers (Held):</b></p>
+<ul style="margin: 4px 0 12px 0;">
+  <li>TICKER — moved from #X to #Y — brief note</li>
+</ul>
+<p><b>📉 Rank Fallers (Held):</b></p>
+<ul style="margin: 4px 0 12px 0;">
+  <li>TICKER — moved from #X to #Y — brief note</li>
+</ul>
+<p><b>🆕 New Top-40 Entrants (Not Held):</b></p>
+<ul style="margin: 4px 0 12px 0;">
+  <li>TICKER — Rank #N @ $X — brief sector note</li>
+</ul>
+<p><b>⚠️ At Risk of Dropping Out (Rank &gt; 30):</b></p>
+<ul style="margin: 4px 0 12px 0;">
+  <li>TICKER — Rank #N — note</li>
+</ul>
+If any category has no entries, write "None today" as a single list item.
 
 <h3>💼 IG CFD Positions</h3>
-For each: <b>TICKER</b> | Current $X | P&L: +/-Y% | RS: [trend]
-Then news summary. <b>Bold price-sensitive ASX announcements.</b>
+For each position use this exact structure:
+
+<div style="margin-bottom: 12px; padding: 8px 0; border-bottom: 1px solid #eee;">
+<p style="margin: 0 0 4px 0;"><b>TICKER</b> | Current $X | P&L: +/-Y% | RS: [trend] | [Earnings/Dividend date if applicable]</p>
+<p style="margin: 0; color: #444;">News summary. <b>Bold price-sensitive ASX announcements.</b></p>
+</div>
 
 <h3>🌍 Market & Macro</h3>
 Use market_context (indices, breadth, ASX200 top RS) for 2-3 sentences.
@@ -574,6 +596,11 @@ def analyse():
 
         result = run_agent(payload)
         report = result["report"]
+
+        # Strip any agent preamble before the first HTML tag
+        html_start = report.find('<')
+        if html_start > 0:
+            report = report[html_start:]
 
         # Strip HTML for plain-text version
         plain = re.sub(r"<[^>]+>", "", report).strip()
