@@ -216,7 +216,7 @@ The trader runs TWO portfolios:
    ROC POSITION RULES:
    - For positions WITH material news: write 2-4 sentences covering the news and its impact
    - For positions with NO material news: write exactly ONE line:
-     "Momentum intact — [sector] exposure. Rank #{rank} in portfolio."
+     "Momentum intact — [sector] exposure. Rank #{{rank}} in portfolio."
      DO NOT write "No material news found" — it adds no value.
    - Flag ⚠️ ONLY for: profit warnings, earnings misses, guidance cuts, structural decline,
      or rank drop of 3+ positions vs yesterday
