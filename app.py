@@ -32,7 +32,7 @@ app = Flask(__name__)
 client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
 SYDNEY = ZoneInfo("Australia/Sydney")
-MODEL  = "claude-opus-4-5"
+MODEL  = "claude-sonnet-4-6"
 
 RAPIDAPI_KEY     = os.getenv("RAPIDAPI_KEY", "")
 RAPIDAPI_HEADERS = {
@@ -156,9 +156,9 @@ def fetch_article(url: str, ticker: str = "") -> str:
         )
         text = (article or soup).get_text(separator=" ", strip=True)
 
-        # Truncate to keep context window sane
-        if len(text) > 3000:
-            text = text[:3000] + "… [truncated]"
+        # Truncate to keep token usage manageable
+        if len(text) > 1500:
+            text = text[:1500] + "… [truncated]"
 
         log.info(f"  fetch_article({ticker}, {url[:60]}): {len(text)} chars")
         return json.dumps({"url": url, "content": text})
@@ -398,13 +398,24 @@ def run_agent(payload: dict) -> dict:
         iteration += 1
         log.info(f"Iteration {iteration}")
 
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=8192,
-            system=build_system_prompt(headlines_pre_loaded),
-            tools=TOOLS,
-            messages=messages,
-        )
+        # Retry on rate limit with backoff
+        for attempt in range(3):
+            try:
+                response = client.messages.create(
+                    model=MODEL,
+                    max_tokens=8192,
+                    system=build_system_prompt(headlines_pre_loaded),
+                    tools=TOOLS,
+                    messages=messages,
+                )
+                break
+            except Exception as e:
+                if "rate_limit" in str(e).lower() and attempt < 2:
+                    wait = 60 * (attempt + 1)
+                    log.warning(f"Rate limit hit — waiting {wait}s before retry {attempt+2}/3")
+                    time.sleep(wait)
+                else:
+                    raise
 
         log.info(f"  stop={response.stop_reason} blocks={[b.type for b in response.content]}")
 
