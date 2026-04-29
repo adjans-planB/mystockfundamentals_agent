@@ -237,7 +237,10 @@ The trader runs TWO portfolios:
      For each, note sector and whether it complements or duplicates existing exposure.
    - exits: Stocks that FELL OUT of top 40 today. If 3 stocks entered, 3 exited — name them.
      If any held position is in exits (held_exits), this is CRITICAL — flag immediately.
-   - at_risk: Held positions ranked 31-40 — one bad day could push them out before rebalance.
+   - at_risk: Held positions ranked 31-40 IN THE TOP 40 UNIVERSE (not portfolio rank).
+     Rank here means their position within the top 40 ROC stocks — rank 31-40 means they
+     are near the boundary of the universe and could drop out before the next rebalance.
+     Portfolio rank (#1-20 in held positions) is different from universe rank (#1-40).
 
 3. IG CFD POSITIONS (Secondary)
    Shorter-term CFD positions. Each shows: symbol, quantity, opening_price, current_price,
@@ -298,8 +301,11 @@ For each position use this exact structure:
 </div>
 
 <h3>🌍 Market & Macro</h3>
-Use market_context (indices, breadth, ASX200 top RS) for 2-3 sentences.
-Note any macro themes affecting both books (rates, commodities, USD/AUD).
+THIS SECTION IS MANDATORY — always include it even if brief.
+Use market_context data: report overnight moves for S&P 500, Nasdaq, ASX 200 with exact figures.
+Include breadth stats (advancers/decliners, % above MA50).
+Note top RS movers from asx200_top_rs.
+Note any macro themes affecting both books (commodities, USD/AUD, rates, geopolitics).
 
 <h3>⚡ Key Actions Today</h3>
 3-5 concrete bullet points — things to act on or monitor today specifically.
