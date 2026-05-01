@@ -389,9 +389,11 @@ def run_agent(payload: dict) -> dict:
     headlines_pre_loaded = payload.get("headlines_pre_loaded", False)
     messages  = [{"role": "user", "content": build_user_prompt(payload)}]
 
-    max_iterations = 60
-    iteration      = 0
+    max_iterations      = 60
+    iteration           = 0
     news_cache: dict[str, list] = {}   # ticker -> list of article dicts
+    total_input_tokens  = 0
+    total_output_tokens = 0
 
     log.info(
         f"Agent starting — "
@@ -423,14 +425,34 @@ def run_agent(payload: dict) -> dict:
                 else:
                     raise
 
-        log.info(f"  stop={response.stop_reason} blocks={[b.type for b in response.content]}")
+        # Track token usage
+        total_input_tokens  += response.usage.input_tokens
+        total_output_tokens += response.usage.output_tokens
+        log.info(
+            f"  stop={response.stop_reason} blocks={[b.type for b in response.content]} "
+            f"tokens=({response.usage.input_tokens}in/{response.usage.output_tokens}out)"
+        )
 
         if response.stop_reason == "end_turn":
             final = "".join(
                 block.text for block in response.content if hasattr(block, "text")
             )
-            log.info(f"Agent complete in {iteration} iterations")
-            return {"report": final, "iterations": iteration, "news_cache": news_cache}
+            # Calculate cost
+            sonnet_cost = (total_input_tokens * 3 + total_output_tokens * 15) / 1_000_000
+            opus_cost   = (total_input_tokens * 15 + total_output_tokens * 75) / 1_000_000
+            log.info(
+                f"Agent complete in {iteration} iterations — "
+                f"tokens: {total_input_tokens:,} in / {total_output_tokens:,} out — "
+                f"cost: ${sonnet_cost:.4f} USD (Sonnet) / ${opus_cost:.4f} USD (Opus equiv)"
+            )
+            return {
+                "report":               final,
+                "iterations":           iteration,
+                "news_cache":           news_cache,
+                "total_input_tokens":   total_input_tokens,
+                "total_output_tokens":  total_output_tokens,
+                "estimated_cost_usd":   round(sonnet_cost, 4),
+            }
 
         if response.stop_reason == "tool_use":
             messages.append({"role": "assistant", "content": response.content})
@@ -662,12 +684,16 @@ def analyse():
             news_cache=result.get("news_cache", {}),
         )
 
+        cost_usd = result.get("estimated_cost_usd", 0)
         return jsonify({
-            "report_html":    report,
-            "report_text":    plain,
-            "stocks_covered": stocks_covered,
-            "iterations":     result["iterations"],
-            "generated_at":   datetime.now(SYDNEY).isoformat(),
+            "report_html":         report,
+            "report_text":         plain,
+            "stocks_covered":      stocks_covered,
+            "iterations":          result["iterations"],
+            "total_input_tokens":  result.get("total_input_tokens", 0),
+            "total_output_tokens": result.get("total_output_tokens", 0),
+            "estimated_cost_usd":  cost_usd,
+            "generated_at":        datetime.now(SYDNEY).isoformat(),
         })
 
     except Exception as e:
