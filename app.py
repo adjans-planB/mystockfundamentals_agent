@@ -254,10 +254,18 @@ REPORT FORMAT — produce clean HTML:
 <h2>🌅 Morning Briefing — {today}</h2>
 
 <h3>📈 ROC Portfolio ({today})</h3>
+RANKING SYSTEM — ONE RANK ONLY:
+All ranks use a single system: stocks ordered by 200-day ROC score descending across the full
+tracked universe. Rank #1 = highest ROC score. Your 20 held stocks each have a rank within
+this list — e.g. PLS at #2 means it has the 2nd highest ROC of all tracked ASX stocks today.
+This rank changes daily as ROC scores update. A stock dropping from #2 to #5 means 3 stocks
+have overtaken it in ROC momentum. The top 40 is just the top 40 stocks in this same list.
+Use this rank everywhere — in position headers, in the movers section, in the at-risk section.
+
 For each position use this exact structure — each stock MUST be wrapped in its own div:
 
 <div style="margin-bottom: 12px; padding: 8px 0; border-bottom: 1px solid #eee;">
-<p style="margin: 0 0 4px 0;"><b>TICKER</b> | Rank #N | Entry $X → Current $Y | P&L: +/-Z% | Weight: W%</p>
+<p style="margin: 0 0 4px 0;"><b>TICKER</b> | ROC Rank #[rank] | Entry $X → Current $Y | P&L: +/-Z% | Weight: W%</p>
 <p style="margin: 0; color: #444;">One line or 2-4 sentence news summary here. Flag ⚠️ thesis risks.</p>
 </div>
 
@@ -268,12 +276,14 @@ One paragraph on portfolio sector exposure and correlation risk.
 <h3>📊 ROC Top 40 Movers</h3>
 Use this exact structure:
 
-<p><b>📊 Held Position Rank Changes:</b></p>
+<p><b>📊 ROC Rank Changes (held positions only, 1=highest ROC in full universe):</b></p>
 <ul style="margin: 4px 0 12px 0;">
-  <li>TICKER — #X → #Y (▲N or ▼N) — one line note if significant, otherwise omit note</li>
+  <li>TICKER — #X → #Y (▲N or ▼N) — note only if change ≥ 2, otherwise list as one line</li>
 </ul>
-List ALL held positions that have rank data. Sort by magnitude of change (biggest movers first).
-Flag ⚠️ on any falling 3+ ranks.
+List all held positions that have rank data, sorted by magnitude of change (biggest movers first).
+Use rank_today and rank_yesterday from held_rank_changes — these are ROC ranks in the full universe.
+Flag ⚠️ on any position falling 3+ ranks (momentum fading).
+Flag 🚀 on any position rising 3+ ranks (momentum accelerating).
 
 <p><b>🆕 New Entrants (Not Held — Rebalance Candidates):</b></p>
 <ul style="margin: 4px 0 12px 0;">
@@ -286,11 +296,11 @@ Flag ⚠️ on any falling 3+ ranks.
 </ul>
 If a held position appears here, flag ⚠️ CRITICAL — position dropped out of universe.
 
-<p><b>⚠️ At Risk (Held, Rank 31-40):</b></p>
+<p><b>⚠️ Held Positions in Universe At-Risk Zone (Universe Rank 31-40):</b></p>
 <ul style="margin: 4px 0 12px 0;">
-  <li>TICKER — Rank #N — at risk before 30 April rebalance</li>
+  <li>TICKER — Universe Rank #N — could drop out of top 40 before next rebalance</li>
 </ul>
-If no entries in any category, write "None today."
+Use the at_risk field from roc_movers. If none, write "None today."
 
 <h3>💼 IG CFD Positions</h3>
 For each position use this exact structure:
