@@ -436,12 +436,19 @@ def run_agent(payload: dict) -> dict:
                     raise
 
         # Track token usage
-        total_input_tokens  += response.usage.input_tokens
-        total_output_tokens += response.usage.output_tokens
-        log.info(
-            f"  stop={response.stop_reason} blocks={[b.type for b in response.content]} "
-            f"tokens=({response.usage.input_tokens}in/{response.usage.output_tokens}out)"
-        )
+        if hasattr(response, "usage") and response.usage:
+            total_input_tokens  += response.usage.input_tokens
+            total_output_tokens += response.usage.output_tokens
+            log.info(
+                f"  stop={response.stop_reason} blocks={[b.type for b in response.content]} "
+                f"tokens=({response.usage.input_tokens}in/{response.usage.output_tokens}out) "
+                f"cumulative=({total_input_tokens}in/{total_output_tokens}out)"
+            )
+        else:
+            log.warning(
+                f"  stop={response.stop_reason} blocks={[b.type for b in response.content]} "
+                f"— no usage data on response (SDK version may not support it)"
+            )
 
         if response.stop_reason == "end_turn":
             final = "".join(
